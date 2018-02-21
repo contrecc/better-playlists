@@ -19,7 +19,7 @@ class Filter extends Component {
   render() {
     return (
       <div style={defaultStyle}>
-        <img />
+        <img src="" alt="" />
         <input type="text"/>
       </div>
     );
