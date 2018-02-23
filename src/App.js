@@ -1,48 +1,49 @@
 import React, { Component } from 'react';
 import './App.css';
+import queryString from 'query-string';
 
 let defaultStyle = {
   color: '#fff'
 };
-let fakeServerData = {
-  user: {
-    name: 'Colin',
-    playlists: [
-      {
-        name: 'My favorites',
-        songs: [
-          { name: 'Beat It', duration: 1345 },
-          { name: 'Canneloni Macaroni', duration: 1236 },
-          { name: 'Rosa helicopter', duration: 70000 }
-        ]
-      },
-      {
-        name: 'Discover Weekly',
-        songs: [
-          { name: 'Beat It', duration: 1345 },
-          { name: 'Canneloni Macaroni', duration: 1236 },
-          { name: 'Rosa helicopter', duration: 70000 }
-        ]
-      },
-      {
-        name: 'Another playlist - the best!',
-        songs: [
-          { name: 'Beat It', duration: 1345 },
-          { name: 'Hallelujah', duration: 1236 },
-          { name: 'Rosa helicopter', duration: 70000 }
-        ]
-      },
-      {
-        name: 'Playlist - yeah!',
-        songs: [
-          { name: 'Beat It', duration: 1345 },
-          { name: 'Canneloni Macaroni', duration: 1236 },
-          { name: 'Ow ow ow', duration: 70000 }
-        ]
-      }
-    ]
-  }
-};
+// let fakeServerData = {
+//   user: {
+//     name: 'Colin',
+//     playlists: [
+//       {
+//         name: 'My favorites',
+//         songs: [
+//           { name: 'Beat It', duration: 1345 },
+//           { name: 'Canneloni Macaroni', duration: 1236 },
+//           { name: 'Rosa helicopter', duration: 70000 }
+//         ]
+//       },
+//       {
+//         name: 'Discover Weekly',
+//         songs: [
+//           { name: 'Beat It', duration: 1345 },
+//           { name: 'Canneloni Macaroni', duration: 1236 },
+//           { name: 'Rosa helicopter', duration: 70000 }
+//         ]
+//       },
+//       {
+//         name: 'Another playlist - the best!',
+//         songs: [
+//           { name: 'Beat It', duration: 1345 },
+//           { name: 'Hallelujah', duration: 1236 },
+//           { name: 'Rosa helicopter', duration: 70000 }
+//         ]
+//       },
+//       {
+//         name: 'Playlist - yeah!',
+//         songs: [
+//           { name: 'Beat It', duration: 1345 },
+//           { name: 'Canneloni Macaroni', duration: 1236 },
+//           { name: 'Ow ow ow', duration: 70000 }
+//         ]
+//       }
+//     ]
+//   }
+// };
 
 class PlaylistCounter extends Component {
   render() {
@@ -76,8 +77,10 @@ class Filter extends Component {
     return (
       <div style={defaultStyle}>
         <img src="" alt="" />
-        <input type="text" onKeyUp={event => 
-          this.props.onTextChange(event.target.value)} />
+        <input
+          type="text"
+          onKeyUp={event => this.props.onTextChange(event.target.value)}
+        />
       </div>
     );
   }
@@ -86,13 +89,11 @@ class Filter extends Component {
 class Playlist extends Component {
   render() {
     let playlist = this.props.playlist;
-    return (
-      <div style={{ ...defaultStyle, display: 'inline-block', width: '25%' }}>
-        <img src="" alt="" />
+    return <div style={{ ...defaultStyle, display: 'inline-block', width: '25%' }}>
+        <img src={playlist.imageUrl ? playlist.imageUrl : require('./record.jpg')} style={{ width: '60px' }} alt=''/>
         <h3>{playlist.name}</h3>
         <ul>{playlist.songs.map(song => <li>{song.name}</li>)}</ul>
-      </div>
-    );
+      </div>;
   }
 }
 
@@ -106,35 +107,76 @@ class App extends Component {
   }
 
   componentDidMount() {
-    setTimeout(() => {
-      this.setState({ serverData: fakeServerData });
-    }, 1000);
+    let parsed = queryString.parse(window.location.search);
+    let accessToken = parsed.access_token;
+
+    if (!accessToken) return;
+
+    fetch('https://api.spotify.com/v1/me', {
+      headers: { 'Authorization': 'Bearer ' + accessToken }
+    })
+      .then(response => response.json())
+      .then(data =>
+        this.setState({
+          user: {
+            name: data.display_name
+          }
+        })
+      )
+
+    fetch('https://api.spotify.com/v1/me/playlists', {
+      headers: { 'Authorization': 'Bearer ' + accessToken }
+    })
+      .then(response => response.json())
+      .then(data => {
+        this.setState({
+          playlists: data.items.map(item => {
+            console.log(data.items);
+            return {
+              name: item.name,
+              imageUrl: item.images[0].url ? item.images[0].url : null,
+              songs: []
+            }})
+          })
+        })
+
   }
 
   render() {
-    let playlistsToRender = this.state.serverData.user ? this.state.serverData.user.playlists.filter(
-      playlist =>
-        playlist.name
-          .toLowerCase()
-          .includes(this.state.filterString.toLowerCase())
-    ) : []
+    let playlistsToRender =
+      this.state.user && 
+      this.state.playlists
+        ? this.state.playlists.filter(playlist =>
+            playlist.name.toLowerCase().includes(
+              this.state.filterString.toLowerCase()))
+        : []
     return (
       <div className="App">
-        {this.state.serverData.user ? (
+        {this.state.user ? 
           <div>
             <h1 style={{ ...defaultStyle, fontSize: '54px' }}>
-              {this.state.serverData.user.name}'s Playlist
+              {this.state.user.name}'s Playlist
             </h1>
             <PlaylistCounter playlists={playlistsToRender} />
             <HoursCounter playlists={playlistsToRender} />
-            <Filter onTextChange={text => this.setState({filterString: text})} />
+            <Filter
+              onTextChange={text => {
+                this.setState({ filterString: text });
+              }}
+            />
             {playlistsToRender.map(playlist => (
               <Playlist playlist={playlist} />
             ))}
           </div>
-        ) : (
-          <h1 style={defaultStyle}>Loading...</h1>
-        )}
+         : <button onClick={() => {
+              window.location = window.location.href.includes('localhost')
+              ? 'http://localhost:8888/login'
+              : 'https://better-playlists-test-backend.herokuapp.com/login'
+         }
+              }
+            style={{ padding: '20px', fontSize: '50px', marginTop: '20px' }}
+          >Sign in with Spotify</button>
+        }
       </div>
     );
   }
