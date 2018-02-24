@@ -5,7 +5,7 @@ import queryString from 'query-string';
 
 let defaultStyle = {
   color: '#fff',
-  fontFamily: 'Papyrus'
+  fontFamily: 'Roboto, sans-serif'
 };
 let counterStyle = {...defaultStyle,
   width: '40%',
@@ -71,11 +71,11 @@ class Playlist extends Component {
   render() {
     let playlist = this.props.playlist;
     return <div style={{...defaultStyle, display: 'inline-block', width: '25%', padding: '10px', backgroundColor: isEven(this.props.index) ? '#C0C0C0' : '#808080'}}>
-        <h2 style={{fontWeight: 'bold'}}>{playlist.name}</h2>
+        <h2 style={{fontWeight: 'bold', fontSize: '30px'}}>{playlist.name}</h2>
         <img src={playlist.imageUrl ? playlist.imageUrl : require('./record.jpg')} style={{width: '60px'}} alt="" />
-        <ul style={{marginTop: '10px', fontWeight: 'bold'}}>
+        <ul style={{marginTop: '10px'}}>
           {playlist.songs.map(song => (
-            <li style={{paddingTop: '2px'}}>{song.name}</li>
+            <li style={{paddingBottom: '10px'}}>{song.name}</li>
           ))}
         </ul>
       </div>
